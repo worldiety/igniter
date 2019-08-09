@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 
 	"gitlab.worldiety.net/flahde/igniter/k8s/ingress"
+	"gitlab.worldiety.net/flahde/igniter/k8s/node"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/clientcmd"
 	"os/signal"
@@ -39,16 +40,22 @@ func main() {
 		panic(err.Error())
 	}
 
+	nodes, err := node.GetInfoAboutWorkerNodes(clientset)
+	if err != nil {
+		panic(err.Error())
+	}
+	fmt.Println(nodes)
+
 	interrupt := make(chan os.Signal, 1)
 	done := make(chan struct{}, 1)
 	signal.Notify(interrupt, os.Interrupt)
 
 	fmt.Println("Starting watcher")
-	ingress.WatchIngresses(clientset, done)
+	ingress.WatchIngresses(clientset, nodes, done)
 	for sig := range interrupt {
 		fmt.Printf("Recieved %v, stopping\n", sig)
-		var s struct{}
-		done <- s
+		//var s struct{}
+		//done <- s
 		break
 	}
 }

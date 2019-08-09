@@ -6,10 +6,10 @@ import (
 )
 
 type IngressHolder struct {
-	id        types.UID
-	namespace string
-	name      string
-	urls      []string
+	Id        types.UID
+	Namespace string
+	Name      string
+	URLs      []string
 }
 
 func ParseIngressRespone(ingressList *v1beta1.IngressList) ([]IngressHolder, error) {
