@@ -8,13 +8,13 @@ import (
 
 // DNSRecord is a representation of a DNS record
 type DNSRecord struct {
-	dnsType string
-	url     string
-	ip      net.IP
+	DnsType string
+	Url     string
+	Ip      net.IP
 }
 
 func (record DNSRecord) String() string {
-	return fmt.Sprintf("%s %s %s", record.dnsType, record.url, record.ip.String())
+	return fmt.Sprintf("%s %s %s", record.DnsType, record.Url, record.Ip.String())
 }
 
 func NewDNSRecords(dnsType string, urls []string, nodes []node.NodeInfo) []DNSRecord {
