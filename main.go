@@ -4,7 +4,6 @@ import (
 	"flag"
 	"fmt"
 	"log"
-	"net"
 	"os"
 	"path/filepath"
 
@@ -40,7 +39,6 @@ func main() {
 	flag.Parse()
 
 	cloudflareToken, err := cloudflareToken()
-
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -69,16 +67,11 @@ func main() {
 	if err != nil {
 		log.Fatal("Failed to build Cloudflare client", err)
 	}
-	cloudflareClient.AddDNSRecord(dns.DNSRecord{
-		"A",
-		"foo",
-		net.ParseIP("195.201.221.183"),
-	})
-	os.Exit(0)
+	//os.Exit(0)
 
 	log.Println("Starting watcher")
 	done := make(chan struct{}, 1)
-	ingress.WatchIngresses(clientset, nodes, done)
+	ingress.WatchIngresses(clientset, nodes, cloudflareClient, done)
 
 	interrupt := make(chan os.Signal, 1)
 	signal.Notify(interrupt, os.Interrupt)
