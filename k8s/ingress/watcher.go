@@ -1,7 +1,6 @@
 package ingress
 
 import (
-	"fmt"
 	"gitlab.worldiety.net/flahde/igniter/dns"
 	"gitlab.worldiety.net/flahde/igniter/k8s/node"
 	"k8s.io/api/core/v1"
@@ -52,7 +51,7 @@ func handleIngressAdd(obj interface{}) {
 	parsed := ParseSingleIngress(ingress)
 	dnsRecords := dns.NewDNSRecords("A", parsed.URLs, nodes)
 
-	fmt.Printf("ADD %+v\n", dnsRecords)
+	log.Printf("ADD %+v\n", dnsRecords)
 }
 
 func handleIngressUpdate(old, new interface{}) {
@@ -66,7 +65,7 @@ func handleIngressUpdate(old, new interface{}) {
 		log.Printf("Recieved unknown type: %t\n", new)
 		return
 	}
-	fmt.Printf("UPDATE %v %v\n", ParseSingleIngress(oldIngress), ParseSingleIngress(newIngress))
+	log.Printf("UPDATE %v %v\n", ParseSingleIngress(oldIngress), ParseSingleIngress(newIngress))
 }
 
 func handleIngressDelete(obj interface{}) {
@@ -75,5 +74,5 @@ func handleIngressDelete(obj interface{}) {
 		log.Printf("Recieved unknown type: %t\n", obj)
 		return
 	}
-	fmt.Printf("DELETE %v\n", ParseSingleIngress(ingress))
+	log.Printf("DELETE %v\n", ParseSingleIngress(ingress))
 }

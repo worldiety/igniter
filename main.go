@@ -2,7 +2,7 @@ package main
 
 import (
 	"flag"
-	"fmt"
+	"log"
 	"os"
 	"path/filepath"
 
@@ -44,18 +44,21 @@ func main() {
 	if err != nil {
 		panic(err.Error())
 	}
-	fmt.Println(nodes)
+
+	for _, node := range nodes {
+		log.Printf("Found node '%s' with IP '%s'", node.Name, node.PublicIP)
+	}
 
 	interrupt := make(chan os.Signal, 1)
 	done := make(chan struct{}, 1)
 	signal.Notify(interrupt, os.Interrupt)
 
-	fmt.Println("Starting watcher")
+	log.Println("Starting watcher")
 	ingress.WatchIngresses(clientset, nodes, done)
 	for sig := range interrupt {
-		fmt.Printf("Recieved %v, stopping\n", sig)
-		//var s struct{}
-		//done <- s
+		log.Printf("Recieved %v, stopping\n", sig)
+		var s struct{}
+		done <- s
 		break
 	}
 }
