@@ -6,15 +6,19 @@ import (
 	"time"
 )
 
+const (
+	DEFAULT_TTL              = 120
+	DEFAULT_CLOUDFLARE_PROXY = true
+)
+
 // CloudflareDNSRecord represents a DNS record API object on cloudflare
 // This structure will be serialized and send to the cloudflare api
 type CloudflareDNSRecord struct {
-	DnsType  string `json:"type"`
-	Name     string `json:"name"`
-	Content  net.IP `json:"content"`
-	Ttl      uint16 `json:"ttl"`
-	Priority uint16 `json:"priority"`
-	Proxied  bool   `json:"proxied"`
+	DnsType string `json:"type"`
+	Name    string `json:"name"`
+	Content net.IP `json:"content"`
+	Ttl     uint16 `json:"ttl"`
+	Proxied bool   `json:"proxied"`
 }
 
 func newFromDNSRecord(rec dns.DNSRecord) CloudflareDNSRecord {
@@ -22,9 +26,8 @@ func newFromDNSRecord(rec dns.DNSRecord) CloudflareDNSRecord {
 		rec.DnsType,
 		rec.Url,
 		rec.Ip,
-		120, // TODO Make these parameters configurable
-		0,
-		true,
+		DEFAULT_TTL,
+		DEFAULT_CLOUDFLARE_PROXY,
 	}
 }
 
