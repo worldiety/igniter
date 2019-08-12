@@ -11,21 +11,19 @@ import (
 	"k8s.io/client-go/kubernetes"
 	cache "k8s.io/client-go/tools/cache"
 	"log"
-	"sync"
 	"time"
 )
 
-var (
-	nodeInfos  []node.NodeInfo
-	nodesMutex sync.RWMutex
-	cfClient   cloudflare.CloudflareClient
-)
+type ingressWatcher struct {
+	nodeInfos []node.NodeInfo
+	cfClient  cloudflare.CloudflareClient
+}
 
 func WatchIngresses(clientset *kubernetes.Clientset, nodes []node.NodeInfo, cloudflareClient cloudflare.CloudflareClient, done <-chan struct{}) {
-	nodesMutex.Lock()
-	nodeInfos = nodes
-	nodesMutex.Unlock()
-	cfClient = cloudflareClient
+	watcher := &ingressWatcher{
+		nodeInfos: nodes,
+		cfClient:  cloudflareClient,
+	}
 
 	watchList := cache.NewListWatchFromClient(clientset.ExtensionsV1beta1().RESTClient(), "ingresses", v1.NamespaceAll, fields.Everything())
 
@@ -34,28 +32,24 @@ func WatchIngresses(clientset *kubernetes.Clientset, nodes []node.NodeInfo, clou
 		&v1beta1.Ingress{},
 		30*time.Second,
 		cache.ResourceEventHandlerFuncs{
-			AddFunc:    handleIngressAdd,
-			UpdateFunc: handleIngressUpdate,
-			DeleteFunc: handleIngressDelete,
+			AddFunc:    watcher.handleIngressAdd,
+			UpdateFunc: watcher.handleIngressUpdate,
+			DeleteFunc: watcher.handleIngressDelete,
 		},
 	)
 	go controller.Run(done)
 }
 
-func handleIngressAdd(obj interface{}) {
-	nodesMutex.RLock()
-	nodes := nodeInfos
-	nodesMutex.RUnlock()
-
+func (watcher *ingressWatcher) handleIngressAdd(obj interface{}) {
 	ingress, ok := obj.(*v1beta1.Ingress)
 	if !ok {
 		log.Printf("Recieved unknown type: %t\n", obj)
 		return
 	}
 	parsed := ParseSingleIngress(ingress)
-	dnsRecords := dns.NewDNSRecords("A", parsed.URLs, nodes)
+	dnsRecords := dns.NewDNSRecords("A", parsed.URLs, watcher.nodeInfos)
 	for _, rec := range dnsRecords {
-		resp, err := cfClient.AddDNSRecord(rec)
+		resp, err := watcher.cfClient.AddDNSRecord(rec)
 		if err != nil {
 			log.Println("ERR: Error during request to cloudflare", err)
 		} else if cloudflare.IsAlreadyExistsError(resp) {
@@ -68,11 +62,7 @@ func handleIngressAdd(obj interface{}) {
 	}
 }
 
-func handleIngressUpdate(old, new interface{}) {
-	nodesMutex.RLock()
-	nodes := nodeInfos
-	nodesMutex.RUnlock()
-
+func (watcher *ingressWatcher) handleIngressUpdate(old, new interface{}) {
 	oldIngress, ok := old.(*v1beta1.Ingress)
 	if !ok {
 		log.Printf("Recieved unknown type: %t\n", old)
@@ -100,9 +90,9 @@ func handleIngressUpdate(old, new interface{}) {
 		return
 	}
 
-	oldDNSRecords := dns.NewDNSRecords("A", oldParsed.URLs, nodes)
-	newDNSRecords := dns.NewDNSRecords("A", newParsed.URLs, nodes)
-	listResp, err := cfClient.ListDNSRecords()
+	oldDNSRecords := dns.NewDNSRecords("A", oldParsed.URLs, watcher.nodeInfos)
+	newDNSRecords := dns.NewDNSRecords("A", newParsed.URLs, watcher.nodeInfos)
+	listResp, err := watcher.cfClient.ListDNSRecords()
 	if err != nil {
 		log.Println("ERR: unable to get DNS records from Cloudflare", err)
 		return
@@ -113,7 +103,7 @@ func handleIngressUpdate(old, new interface{}) {
 			log.Println(err)
 			continue
 		}
-		resp, err := cfClient.UpdateDNSRecord(id, rec)
+		resp, err := watcher.cfClient.UpdateDNSRecord(id, rec)
 		if err != nil {
 			log.Println("ERR: Error during request to cloudflare", err)
 		} else if cloudflare.IsAlreadyExistsError(resp) {
@@ -126,11 +116,7 @@ func handleIngressUpdate(old, new interface{}) {
 	}
 }
 
-func handleIngressDelete(obj interface{}) {
-	nodesMutex.RLock()
-	nodes := nodeInfos
-	nodesMutex.RUnlock()
-
+func (watcher *ingressWatcher) handleIngressDelete(obj interface{}) {
 	ingress, ok := obj.(*v1beta1.Ingress)
 	if !ok {
 		log.Printf("Recieved unknown type: %t\n", obj)
@@ -138,8 +124,8 @@ func handleIngressDelete(obj interface{}) {
 	}
 	parsed := ParseSingleIngress(ingress)
 
-	dnsRecords := dns.NewDNSRecords("A", parsed.URLs, nodes)
-	listResp, err := cfClient.ListDNSRecords()
+	dnsRecords := dns.NewDNSRecords("A", parsed.URLs, watcher.nodeInfos)
+	listResp, err := watcher.cfClient.ListDNSRecords()
 	if err != nil {
 		log.Println("ERR: unable to get DNS records from Cloudflare", err)
 	}
@@ -150,7 +136,7 @@ func handleIngressDelete(obj interface{}) {
 			continue
 		}
 
-		resp, err := cfClient.DeleteDNSRecord(id)
+		resp, err := watcher.cfClient.DeleteDNSRecord(id)
 		if err != nil {
 			log.Println("ERR: Error during request to cloudflare", err)
 		} else if cloudflare.IsSuccess(resp) {
