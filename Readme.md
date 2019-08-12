@@ -2,7 +2,7 @@
 
 **Automaticlly add DNS records to Cloudflare**  
 
-Igniter is meant to be deployed inside a Kubernetes Cluster. From there, it watches the `/ingress` endpoint of the Kubernetes API. Upon changes of that ingress it will modify DNS records on Cloudflare accordingly. This way, one can use Cloudflare's Infrastructure without wildcard DNS records.
+Igniter is meant to be deployed inside a Kubernetes Cluster. From there, it watches the `/ingress` endpoint of the Kubernetes API. Upon changes it will modify DNS records on Cloudflare accordingly. This way, one can use Cloudflare's infrastructure without wildcard DNS records.
 
 ## How to deploy
 
