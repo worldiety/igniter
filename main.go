@@ -11,6 +11,7 @@ import (
 	"gitlab.worldiety.net/flahde/igniter/k8s/ingress"
 	"gitlab.worldiety.net/flahde/igniter/k8s/node"
 	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 	"os/signal"
 )
@@ -30,12 +31,16 @@ func cloudflareToken() (string, error) {
 }
 
 func main() {
-	var kubeconfig *string
+	var (
+		kubeconfig   *string
+		outOfCluster *bool
+	)
 	if home := homeDir(); home != "" {
 		kubeconfig = flag.String("kubeconfig", filepath.Join(home, ".kube", "config"), "(optional) absolute path to the kubeconfig file")
 	} else {
 		kubeconfig = flag.String("kubeconfig", "", "absolute path to the kubeconfig file")
 	}
+	outOfCluster = flag.Bool("outofcluster", false, "(optional) set this to true if testing on a dev machine")
 	flag.Parse()
 
 	cloudflareToken, err := cloudflareToken()
@@ -44,7 +49,14 @@ func main() {
 	}
 
 	// use the current context in kubeconfig
-	config, err := clientcmd.BuildConfigFromFlags("", *kubeconfig)
+	var config *rest.Config
+	if *outOfCluster {
+		log.Printf("Running in out-cluster-mode using %s", *kubeconfig)
+		config, err = clientcmd.BuildConfigFromFlags("", *kubeconfig)
+	} else {
+		log.Println("Running in in-cluster mode")
+		config, err = rest.InClusterConfig()
+	}
 	if err != nil {
 		log.Fatal(err)
 	}
