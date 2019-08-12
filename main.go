@@ -14,6 +14,7 @@ import (
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 	"os/signal"
+	"syscall"
 )
 
 func homeDir() string {
@@ -86,7 +87,14 @@ func main() {
 	ingress.WatchIngresses(clientset, nodes, cloudflareClient, done)
 
 	interrupt := make(chan os.Signal, 1)
-	signal.Notify(interrupt, os.Interrupt)
+	if *outOfCluster {
+		log.Println("Press Ctrl-c to stop")
+		signal.Notify(interrupt, os.Interrupt)
+	} else {
+		// k8s tries to stop pods gracefully by sending SIGTERM, so let's listen for that
+		signal.Notify(interrupt, syscall.SIGTERM)
+	}
+
 	for sig := range interrupt {
 		log.Printf("Recieved %v, stopping\n", sig)
 		var s struct{}
