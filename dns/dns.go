@@ -32,12 +32,3 @@ func NewDNSRecords(dnsType string, urls []string, nodes []node.NodeInfo) []DNSRe
 
 	return ret
 }
-
-type DNSHandler interface {
-	// HasDNSRecord checks wether the given DNS record exists on cloudflare
-	HasDNSRecord(DNSRecord) (bool, error)
-	// AddDNSRecord adds an DNS record to cloudflare. TODO: What happens when called twice with the same record?
-	AddDNSRecord(DNSRecord) error
-	// RemoveDNSRecord deletes an DNS record on cloudflare. TODO: What happens when called twice with the same record?
-	RemoveDNSRecord(DNSRecord) error
-}

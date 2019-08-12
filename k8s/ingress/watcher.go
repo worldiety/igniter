@@ -68,6 +68,10 @@ func handleIngressAdd(obj interface{}) {
 }
 
 func handleIngressUpdate(old, new interface{}) {
+	nodesMutex.RLock()
+	nodes := nodeInfos
+	nodesMutex.RUnlock()
+
 	oldIngress, ok := old.(*v1beta1.Ingress)
 	if !ok {
 		log.Printf("Recieved unknown type: %t\n", old)
@@ -78,7 +82,47 @@ func handleIngressUpdate(old, new interface{}) {
 		log.Printf("Recieved unknown type: %t\n", new)
 		return
 	}
-	log.Printf("UPDATE %v %v\n", ParseSingleIngress(oldIngress), ParseSingleIngress(newIngress))
+
+	oldParsed := ParseSingleIngress(oldIngress)
+	newParsed := ParseSingleIngress(newIngress)
+
+	changed := false
+	for i, oldUrl := range oldParsed.URLs {
+		if oldUrl != newParsed.URLs[i] {
+			changed = true
+			break
+		}
+	}
+
+	if !changed {
+		log.Printf("Skipping updating DNS Record %s: Hasn't changed", oldParsed.URLs[0])
+		return
+	}
+
+	oldDNSRecords := dns.NewDNSRecords("A", oldParsed.URLs, nodes)
+	newDNSRecords := dns.NewDNSRecords("A", newParsed.URLs, nodes)
+	listResp, err := cfClient.ListDNSRecords()
+	if err != nil {
+		log.Println("ERR: unable to get DNS records from Cloudflare", err)
+		return
+	}
+	for i, rec := range newDNSRecords {
+		id, err := getIdForDNSRecord(oldDNSRecords[i], listResp)
+		if err != nil {
+			log.Println(err)
+			continue
+		}
+		resp, err := cfClient.UpdateDNSRecord(id, rec)
+		if err != nil {
+			log.Println("ERR: Error during request to cloudflare", err)
+		} else if dns.IsAlreadyExistsError(resp) {
+			log.Printf("Skipping DNS Record %s: Already exists", rec.Url)
+		} else if dns.IsSuccess(resp) {
+			log.Printf("Updated DNS record for %s", rec.Url)
+		} else {
+			log.Println("Got unknown error while POST request", resp)
+		}
+	}
 }
 
 func handleIngressDelete(obj interface{}) {
@@ -94,12 +138,11 @@ func handleIngressDelete(obj interface{}) {
 	parsed := ParseSingleIngress(ingress)
 
 	dnsRecords := dns.NewDNSRecords("A", parsed.URLs, nodes)
+	listResp, err := cfClient.ListDNSRecords()
+	if err != nil {
+		log.Println("ERR: unable to get DNS records from Cloudflare", err)
+	}
 	for _, rec := range dnsRecords {
-		listResp, err := cfClient.ListDNSRecords()
-		if err != nil {
-			log.Println("ERR: unable to get DNS records from Cloudflare", err)
-			continue
-		}
 		id, err := getIdForDNSRecord(rec, listResp)
 		if err != nil {
 			log.Println(err)

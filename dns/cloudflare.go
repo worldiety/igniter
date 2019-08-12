@@ -134,13 +134,29 @@ func (c *CloudflareClient) AddDNSRecord(record DNSRecord) (*CloudflareResponse, 
 	return cfResp, nil
 }
 
+func (c *CloudflareClient) UpdateDNSRecord(id string, record DNSRecord) (*CloudflareResponse, error) {
+	cRecord := newFromDNSRecord(record)
+	dnsUrl := fmt.Sprintf(DNS_ID_URL, API_URL, c.zone, id)
+
+	resp, err := c.doRequest("PUT", dnsUrl, cRecord)
+	if err != nil {
+		return nil, errors.Wrap(err, "request to delete record failed")
+	}
+
+	cfResp, err := parseIntoCloudflareResponse(resp)
+	if err != nil {
+		return nil, errors.Wrap(err, "unable to convert response to Cloudflare response")
+	}
+	return cfResp, nil
+}
+
 func (c *CloudflareClient) DeleteDNSRecord(id string) (*CloudflareResponse, error) {
 
 	dnsUrl := fmt.Sprintf(DNS_ID_URL, API_URL, c.zone, id)
 
 	resp, err := c.doRequest("DELETE", dnsUrl, nil)
 	if err != nil {
-		return nil, errors.Wrap(err, "request to add DNS record failed")
+		return nil, errors.Wrap(err, "request to delete record failed")
 	}
 
 	cfResp, err := parseIntoCloudflareResponse(resp)
