@@ -31,6 +31,13 @@ func cloudflareToken() (string, error) {
 	return "", fmt.Errorf("Could not find cloudflare api token in environment")
 }
 
+func cloudflareZone() (string, error) {
+	if token := os.Getenv("CLOUDFLARE_ZONE"); token != "" {
+		return token, nil
+	}
+	return "", fmt.Errorf("Could not find cloudflare zone identifier in environment")
+}
+
 func main() {
 	var (
 		kubeconfig   *string
@@ -45,6 +52,11 @@ func main() {
 	flag.Parse()
 
 	cloudflareToken, err := cloudflareToken()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	cloudflareZone, err := cloudflareZone()
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -74,7 +86,7 @@ func main() {
 		log.Printf("Found node '%s' with IP '%s'", node.Name, node.PublicIP)
 	}
 
-	cloudflareClient, err := cloudflare.NewCloudflareClient(cloudflareToken, "81664077c0050a0f3a8996c0402b8574")
+	cloudflareClient, err := cloudflare.NewCloudflareClient(cloudflareToken, cloudflareZone)
 	if err != nil {
 		log.Fatal("Failed to build Cloudflare client", err)
 	}

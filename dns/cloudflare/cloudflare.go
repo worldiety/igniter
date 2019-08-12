@@ -37,7 +37,7 @@ func NewCloudflareClient(apiToken string, zone string) (CloudflareClient, error)
 
 func (c *CloudflareClient) ListDNSRecords() (*CloudflareDNSListResponse, error) {
 
-	dnsUrl := fmt.Sprintf(DNS_URL, API_URL, c.zone)
+	dnsUrl := fmt.Sprintf(DNS_URL, API_URL, c.zone) + "?per_page=100"
 
 	resp, err := c.doRequest("GET", dnsUrl, nil)
 	if err != nil {

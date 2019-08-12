@@ -70,4 +70,6 @@ spec:
                 secretKeyRef:
                   name: cloudflare-api-token
                   key: token
+            - name: "CLOUDFLARE_ZONE"
+              value: ""  # Add cloudflare zone here
 ---
