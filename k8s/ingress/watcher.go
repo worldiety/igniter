@@ -3,6 +3,7 @@ package ingress
 import (
 	"fmt"
 	"gitlab.worldiety.net/flahde/igniter/dns"
+	"gitlab.worldiety.net/flahde/igniter/dns/cloudflare"
 	"gitlab.worldiety.net/flahde/igniter/k8s/node"
 	"k8s.io/api/core/v1"
 	v1beta1 "k8s.io/api/extensions/v1beta1"
@@ -17,10 +18,10 @@ import (
 var (
 	nodeInfos  []node.NodeInfo
 	nodesMutex sync.RWMutex
-	cfClient   dns.CloudflareClient
+	cfClient   cloudflare.CloudflareClient
 )
 
-func WatchIngresses(clientset *kubernetes.Clientset, nodes []node.NodeInfo, cloudflareClient dns.CloudflareClient, done <-chan struct{}) {
+func WatchIngresses(clientset *kubernetes.Clientset, nodes []node.NodeInfo, cloudflareClient cloudflare.CloudflareClient, done <-chan struct{}) {
 	nodesMutex.Lock()
 	nodeInfos = nodes
 	nodesMutex.Unlock()
@@ -57,9 +58,9 @@ func handleIngressAdd(obj interface{}) {
 		resp, err := cfClient.AddDNSRecord(rec)
 		if err != nil {
 			log.Println("ERR: Error during request to cloudflare", err)
-		} else if dns.IsAlreadyExistsError(resp) {
+		} else if cloudflare.IsAlreadyExistsError(resp) {
 			log.Printf("Skipping DNS Record %s: Already exists", rec.Url)
-		} else if dns.IsSuccess(resp) {
+		} else if cloudflare.IsSuccess(resp) {
 			log.Printf("Added DNS record for %s", rec.Url)
 		} else {
 			log.Println("got unknown error while POST request", resp)
@@ -115,9 +116,9 @@ func handleIngressUpdate(old, new interface{}) {
 		resp, err := cfClient.UpdateDNSRecord(id, rec)
 		if err != nil {
 			log.Println("ERR: Error during request to cloudflare", err)
-		} else if dns.IsAlreadyExistsError(resp) {
+		} else if cloudflare.IsAlreadyExistsError(resp) {
 			log.Printf("Skipping DNS Record %s: Already exists", rec.Url)
-		} else if dns.IsSuccess(resp) {
+		} else if cloudflare.IsSuccess(resp) {
 			log.Printf("Updated DNS record for %s", rec.Url)
 		} else {
 			log.Println("Got unknown error while POST request", resp)
@@ -152,7 +153,7 @@ func handleIngressDelete(obj interface{}) {
 		resp, err := cfClient.DeleteDNSRecord(id)
 		if err != nil {
 			log.Println("ERR: Error during request to cloudflare", err)
-		} else if dns.IsSuccess(resp) {
+		} else if cloudflare.IsSuccess(resp) {
 			log.Printf("Deleted DNS Record for %s", rec.Url)
 		} else {
 			log.Println("got unknown error while DELETE request", resp)
@@ -160,7 +161,7 @@ func handleIngressDelete(obj interface{}) {
 	}
 }
 
-func getIdForDNSRecord(record dns.DNSRecord, response *dns.CloudflareDNSListResponse) (string, error) {
+func getIdForDNSRecord(record dns.DNSRecord, response *cloudflare.CloudflareDNSListResponse) (string, error) {
 	for _, cfRecord := range response.Result {
 		if cfRecord.Name == record.Url && cfRecord.Content == record.Ip.String() {
 			return cfRecord.ID, nil

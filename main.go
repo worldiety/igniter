@@ -7,7 +7,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"gitlab.worldiety.net/flahde/igniter/dns"
+	"gitlab.worldiety.net/flahde/igniter/dns/cloudflare"
 	"gitlab.worldiety.net/flahde/igniter/k8s/ingress"
 	"gitlab.worldiety.net/flahde/igniter/k8s/node"
 	"k8s.io/client-go/kubernetes"
@@ -63,7 +63,7 @@ func main() {
 		log.Printf("Found node '%s' with IP '%s'", node.Name, node.PublicIP)
 	}
 
-	cloudflareClient, err := dns.NewCloudflareClient(cloudflareToken, "81664077c0050a0f3a8996c0402b8574")
+	cloudflareClient, err := cloudflare.NewCloudflareClient(cloudflareToken, "81664077c0050a0f3a8996c0402b8574")
 	if err != nil {
 		log.Fatal("Failed to build Cloudflare client", err)
 	}
