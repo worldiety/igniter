@@ -49,7 +49,6 @@ func main() {
 		log.Fatal(err)
 	}
 
-	// use the current context in kubeconfig
 	var config *rest.Config
 	if *outOfCluster {
 		log.Printf("Running in out-cluster-mode using %s", *kubeconfig)
@@ -61,7 +60,6 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	// create the clientset
 	clientset, err := kubernetes.NewForConfig(config)
 	if err != nil {
 		log.Fatal(err)
@@ -80,7 +78,6 @@ func main() {
 	if err != nil {
 		log.Fatal("Failed to build Cloudflare client", err)
 	}
-	//os.Exit(0)
 
 	log.Println("Starting watcher")
 	done := make(chan struct{}, 1)
