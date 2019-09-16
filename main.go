@@ -88,6 +88,7 @@ func main() {
 		log.Printf("Found node '%s' with IP '%s'", n.Name, n.PublicIP)
 	}
 
+	log.Printf("Building Cloudflare client with proxy = %t", *shouldProxyDNS)
 	cloudflareClient, err := cloudflare.NewCloudflareClient(cloudflareToken, cloudflareZone, *shouldProxyDNS)
 	if err != nil {
 		log.Fatal("Failed to build Cloudflare client", err)

@@ -55,7 +55,7 @@ func (c *CloudflareClient) ListDNSRecords() (*CloudflareDNSListResponse, error) 
 }
 
 func (c *CloudflareClient) AddDNSRecord(record dns.DNSRecord) (*CloudflareResponse, error) {
-	cRecord := newFromDNSRecord(record)
+	cRecord := newFromDNSRecord(record, c)
 
 	dnsUrl := fmt.Sprintf(DNS_URL, API_URL, c.zone)
 
@@ -73,7 +73,7 @@ func (c *CloudflareClient) AddDNSRecord(record dns.DNSRecord) (*CloudflareRespon
 }
 
 func (c *CloudflareClient) UpdateDNSRecord(id string, record dns.DNSRecord) (*CloudflareResponse, error) {
-	cRecord := newFromDNSRecord(record)
+	cRecord := newFromDNSRecord(record, c)
 	dnsUrl := fmt.Sprintf(DNS_ID_URL, API_URL, c.zone, id)
 
 	resp, err := c.doRequest("PUT", dnsUrl, cRecord)

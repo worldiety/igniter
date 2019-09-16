@@ -7,8 +7,7 @@ import (
 )
 
 const (
-	DEFAULT_TTL              = 120
-	DEFAULT_CLOUDFLARE_PROXY = true
+	DEFAULT_TTL = 120
 )
 
 // CloudflareDNSRecord represents a DNS record API object on cloudflare
@@ -21,13 +20,13 @@ type CloudflareDNSRecord struct {
 	Proxied bool   `json:"proxied"`
 }
 
-func newFromDNSRecord(rec dns.DNSRecord) CloudflareDNSRecord {
+func newFromDNSRecord(rec dns.DNSRecord, client *CloudflareClient) CloudflareDNSRecord {
 	return CloudflareDNSRecord{
 		rec.DnsType,
 		rec.Url,
 		rec.Ip,
 		DEFAULT_TTL,
-		DEFAULT_CLOUDFLARE_PROXY,
+		client.shouldProxyDNS,
 	}
 }
 
