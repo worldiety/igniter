@@ -62,7 +62,6 @@ func main() {
 	outOfCluster = flag.Bool("outofcluster", false, "(optional) set this to true if testing on a dev machine")
 	flag.Parse()
 
-	log.Println(shouldProxy())
 	cloudflareToken, err := cloudflareToken()
 	if err != nil {
 		log.Fatal(err)
