@@ -6,6 +6,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"strconv"
 
 	"gitlab.worldiety.net/flahde/igniter/dns/cloudflare"
 	"gitlab.worldiety.net/flahde/igniter/k8s/ingress"
@@ -38,11 +39,20 @@ func cloudflareZone() (string, error) {
 	return "", fmt.Errorf("Could not find cloudflare zone identifier in environment")
 }
 
+func shouldProxy() bool {
+	if proxy := os.Getenv("CLOUDFLARE_PROXY"); proxy != "" {
+		should, err := strconv.ParseBool(proxy)
+		if err == nil {
+			return should
+		}
+	}
+	return false
+}
+
 func main() {
 	var (
 		kubeconfig     *string
 		outOfCluster   *bool
-		shouldProxyDNS *bool
 	)
 	if home := homeDir(); home != "" {
 		kubeconfig = flag.String("kubeconfig", filepath.Join(home, ".kube", "config"), "(optional) absolute path to the kubeconfig file")
@@ -50,9 +60,9 @@ func main() {
 		kubeconfig = flag.String("kubeconfig", "", "absolute path to the kubeconfig file")
 	}
 	outOfCluster = flag.Bool("outofcluster", false, "(optional) set this to true if testing on a dev machine")
-	shouldProxyDNS = flag.Bool("proxy", true, "(optional) controls wether records will be proxied through Clouflare or not. Currently existing records are not affected")
 	flag.Parse()
 
+	log.Println(shouldProxy())
 	cloudflareToken, err := cloudflareToken()
 	if err != nil {
 		log.Fatal(err)
@@ -88,8 +98,8 @@ func main() {
 		log.Printf("Found node '%s' with IP '%s'", n.Name, n.PublicIP)
 	}
 
-	log.Printf("Building Cloudflare client with proxy = %t", *shouldProxyDNS)
-	cloudflareClient, err := cloudflare.NewCloudflareClient(cloudflareToken, cloudflareZone, *shouldProxyDNS)
+	log.Printf("Building Cloudflare client with proxy = %t", shouldProxy())
+	cloudflareClient, err := cloudflare.NewCloudflareClient(cloudflareToken, cloudflareZone, shouldProxy())
 	if err != nil {
 		log.Fatal("Failed to build Cloudflare client", err)
 	}
