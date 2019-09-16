@@ -40,8 +40,9 @@ func cloudflareZone() (string, error) {
 
 func main() {
 	var (
-		kubeconfig   *string
-		outOfCluster *bool
+		kubeconfig     *string
+		outOfCluster   *bool
+		shouldProxyDNS *bool
 	)
 	if home := homeDir(); home != "" {
 		kubeconfig = flag.String("kubeconfig", filepath.Join(home, ".kube", "config"), "(optional) absolute path to the kubeconfig file")
@@ -49,6 +50,7 @@ func main() {
 		kubeconfig = flag.String("kubeconfig", "", "absolute path to the kubeconfig file")
 	}
 	outOfCluster = flag.Bool("outofcluster", false, "(optional) set this to true if testing on a dev machine")
+	shouldProxyDNS = flag.Bool("proxy", true, "(optional) controls wether records will be proxied through Clouflare or not. Currently existing records are not affected")
 	flag.Parse()
 
 	cloudflareToken, err := cloudflareToken()
@@ -82,11 +84,11 @@ func main() {
 		log.Fatal(err)
 	}
 
-	for _, node := range nodes {
-		log.Printf("Found node '%s' with IP '%s'", node.Name, node.PublicIP)
+	for _, n := range nodes {
+		log.Printf("Found node '%s' with IP '%s'", n.Name, n.PublicIP)
 	}
 
-	cloudflareClient, err := cloudflare.NewCloudflareClient(cloudflareToken, cloudflareZone)
+	cloudflareClient, err := cloudflare.NewCloudflareClient(cloudflareToken, cloudflareZone, *shouldProxyDNS)
 	if err != nil {
 		log.Fatal("Failed to build Cloudflare client", err)
 	}

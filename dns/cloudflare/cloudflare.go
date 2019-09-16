@@ -20,18 +20,20 @@ const (
 )
 
 type CloudflareClient struct {
-	apiToken string
-	zone     string
-	client   http.Client
+	apiToken       string
+	zone           string
+	client         http.Client
+	shouldProxyDNS bool
 }
 
-func NewCloudflareClient(apiToken string, zone string) (CloudflareClient, error) {
+func NewCloudflareClient(apiToken string, zone string, shouldProxyDNS bool) (CloudflareClient, error) {
 	return CloudflareClient{
 		apiToken,
 		zone,
 		http.Client{
 			Timeout: 5 * time.Second,
 		},
+		shouldProxyDNS,
 	}, nil
 }
 
